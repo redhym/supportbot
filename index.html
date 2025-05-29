@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .chatbot-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            height: 650px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h2 {
+            margin-bottom: 5px;
+            font-size: 18px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .ai-indicator {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            position: absolute;
+            right: 75px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            animation: slideIn 0.3s ease-out;
+            line-height: 1.4;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bot-message {
+            background: #f1f3f5;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-response {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            position: relative;
+        }
+
+        .ai-response::before {
+            content: "🤖";
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            font-size: 16px;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            padding: 16px;
+            background: #f1f3f5;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .quick-replies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .quick-reply {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .quick-reply:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .knowledge-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 6px 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #10b981;
+            color: white;
+        }
+
+        .helpful-rating {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .rating-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: all 0.2s ease;
+        }
+
+        .rating-btn:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        .rating-text {
+            font-size: 12px;
+            color: #666;
+            margin-right: 8px;
+        }
+
+        .form-field {
+            margin: 10px 0;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-field.error input,
+        .form-field.error select,
+        .form-field.error textarea {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .ticket-success {
+            background: #ecfdf5;
+            border: 2px solid #4ade80;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .ticket-success h4 {
+            color: #16a34a;
+            margin-bottom: 8px;
+        }
+
+        .ticket-number {
+            font-family: monospace;
+            font-weight: bold;
+            color: #166534;
+        }
+
+        .ticket-error {
+            background: #fef2f2;
+            border: 2px solid #f87171;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .ticket-error h4 {
+            color: #dc2626;
+            margin-bottom: 8px;
+        }
+
+        .ticket-error p {
+            color: #7f1d1d;
+            margin-bottom: 12px;
+        }
+
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid #e1e5e9;
+            background: white;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        .knowledge-source {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .escalation-notice {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #92400e;
+        }
+
+        .debug-panel {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+        }
+
+        .debug-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 1001;
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Debug Panel -->
+    <button class="debug-toggle" onclick="toggleDebug()">Debug</button>
+    <div id="debugPanel" class="debug-panel" style="display: none;">
+        <div><strong>Debug Mode</strong></div>
+        <div>API Status: <span id="apiStatus">Ready</span></div>
+        <div>Last Request: <span id="lastRequest">None</span></div>
+        <div>Form State: <span id="formState">Clean</span></div>
+        <button onclick="simulateNetworkError()" style="margin-top: 5px; padding: 4px 8px; font-size: 10px;">Simulate Network Error</button>
+        <button onclick="clearDebugLog()" style="margin-top: 5px; margin-left: 5px; padding: 4px 8px; font-size: 10px;">Clear Log</button>
+    </div>
+
+    <div class="chatbot-container">
+        <div class="chat-header">
+            <div class="ai-indicator">Live Support</div>
+            <div class="status-indicator"></div>
+            <h2>AI Support Assistant</h2>
+            <p>Ask me anything or create a support ticket</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                👨‍💼 Hi! I'm your support assistant. I can help answer questions instantly or create a support ticket if needed.
+                <div class="quick-replies">
+                    <div class="quick-reply" onclick="askQuestion('How do I reset my password?')">Reset Password</div>
+                    <div class="quick-reply" onclick="askQuestion('How do I update my billing info?')">Billing Help</div>
+                    <div class="quick-reply" onclick="askQuestion('How do I contact support?')">Contact Support</div>
+                    <div class="quick-reply" onclick="startTicketCreation()">Create Ticket</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="Ask a question or describe your issue..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============= CONFIGURATION =============
+        const CHATBOT_CONFIG = {
+            // Your API Configuration - Update these with your actual endpoints
+            ai: {
+                endpoint: 'https://your-ai-api.com/chat', // Replace with your AI API
+                apiKey: 'your-ai-api-key-here', // Replace with your API key
+                model: 'gpt-3.5-turbo',
+                maxTokens: 150,
+                temperature: 0.7,
+                enabled: false // Set to true when you have a real AI API
+            },
+            
+            // Your Backend API Configuration
+            api: {
+                endpoint: 'https://your-backend-api.com/api/tickets', // Replace with your ticket API
+                apiKey: 'your-api-key-here', // Replace with your API key
+                timeout: 10000,
+                enabled: false // Set to true when you have a real backend API
+            },
+            
+            // Debug and Testing
+            debug: {
+                enabled: true,
+                simulateNetworkError: false,
+                logApiCalls: true
+            },
+            
+            // Knowledge Base (Static fallback)
+            knowledgeBase: {
+                "password reset": {
+                    answer: "To reset your password:\n1. Go to the login page\n2. Click 'Forgot Password'\n3. Enter your email address\n4. Check your email for reset instructions\n5. Follow the link and create a new password",
+                    category: "Account",
+                    confidence: 0.9
+                },
+                "billing": {
+                    answer: "For billing questions:\n• View invoices in your account dashboard\n• Update payment methods in Settings > Billing\n• Contact billing@company.com for payment issues\n• Billing cycles run monthly on your signup date",
+                    category: "Billing",
+                    confidence: 0.85
+                },
+                "contact support": {
+                    answer: "You can reach our support team:\n📧 Email: support@company.com\n💬 Live Chat: Available 9 AM - 6 PM EST\n📞 Phone: 1-800-SUPPORT\n🎫 Ticket System: Use this chat to create tickets",
+                    category: "General",
+                    confidence: 0.9
+                },
+                "account locked": {
+                    answer: "If your account is locked:\n1. Wait 15 minutes and try again\n2. Use the password reset option\n3. Clear your browser cache\n4. If still locked, contact support with your username",
+                    category: "Account",
+                    confidence: 0.8
+                },
+                "slow performance": {
+                    answer: "To improve performance:\n• Clear your browser cache\n• Disable browser extensions\n• Check your internet connection\n• Try using Chrome or Firefox\n• Close other browser tabs",
+                    category: "Technical",
+                    confidence: 0.75
+                }
+            }
+        };
+        // ========================================
+
+        let chatState = {
+            mode: 'ai', // 'ai' or 'ticket'
+            step: 'initial',
+            ticketData: {},
+            conversationHistory: [],
+            formId: null // Track current form instance
+        };
+
+        let tickets = [];
+        let debugLog = [];
+
+        // Debug Functions
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function updateDebugStatus(status, request = null) {
+            if (!CHATBOT_CONFIG.debug.enabled) return;
+            
+            document.getElementById('apiStatus').textContent = status;
+            if (request) {
+                document.getElementById('lastRequest').textContent = request;
+            }
+            
+            debugLog.push({
+                timestamp: new Date().toISOString(),
+                status: status,
+                request: request
+            });
+        }
+
+        function simulateNetworkError() {
+            CHATBOT_CONFIG.debug.simulateNetworkError = !CHATBOT_CONFIG.debug.simulateNetworkError;
+            const status = CHATBOT_CONFIG.debug.simulateNetworkError ? 'Network Error Mode ON' : 'Network Error Mode OFF';
+            updateDebugStatus(status);
+            alert(status);
+        }
+
+        function clearDebugLog() {
+            debugLog = [];
+            updateDebugStatus('Debug Cleared');
+        }
+
+        function addMessage(content, isUser = false, isAI = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : (isAI ? 'bot-message ai-response' : 'bot-message')}`;
+            messageDiv.innerHTML = content;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            document.getElementById('typingIndicator').style.display = 'block';
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+
+        function hideTyping() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function askQuestion(question) {
+            addMessage(question, true);
+            chatState.conversationHistory.push({role: 'user', content: question});
+            handleAIQuery(question);
+        }
+
+        async function handleAIQuery(question) {
+            showTyping();
+            updateDebugStatus('Processing AI Query', question);
+            
+            try {
+                // First, try to find answer in knowledge base
+                const kbAnswer = searchKnowledgeBase(question);
+                
+                if (kbAnswer && kbAnswer.confidence > 0.7) {
+                    hideTyping();
+                    displayKnowledgeAnswer(kbAnswer);
+                    updateDebugStatus('Knowledge Base Hit');
+                } else if (CHATBOT_CONFIG.ai.enabled) {
+                    // Try AI API if enabled
+                    const aiAnswer = await getAIResponse(question);
+                    hideTyping();
+                    displayAIAnswer(aiAnswer);
+                    updateDebugStatus('AI API Response');
+                } else {
+                    // Fallback to generic response
+                    hideTyping();
+                    const fallbackAnswer = `I understand you're asking about: "${question}". While I don't have specific information about this right now, I'd be happy to create a support ticket so our team can help you directly.`;
+                    displayAIAnswer(fallbackAnswer);
+                    updateDebugStatus('Fallback Response');
+                }
+            } catch (error) {
+                hideTyping();
+                console.error('AI Query Error:', error);
+                updateDebugStatus('AI Query Error', error.message);
+                addMessage("I'm having trouble processing your question right now. Would you like to create a support ticket instead?", false, false);
+                addMessage(`<div class="quick-replies"><div class="quick-reply" onclick="startTicketCreation()">Create Ticket</div></div>`);
+            }
+        }
+
+        function searchKnowledgeBase(question) {
+            const kb = CHATBOT_CONFIG.knowledgeBase;
+            const lowerQuestion = question.toLowerCase();
+            
+            let bestMatch = null;
+            let highestScore = 0;
+            
+            for (const [key, value] of Object.entries(kb)) {
+                const score = calculateSimilarity(lowerQuestion, key);
+                if (score > highestScore && score > 0.3) {
+                    highestScore = score;
+                    bestMatch = value;
+                }
+            }
+            
+            return bestMatch;
+        }
+
+        function calculateSimilarity(str1, str2) {
+            const words1 = str1.split(' ');
+            const words2 = str2.split(' ');
+            let matches = 0;
+            
+            words1.forEach(word => {
+                if (words2.some(w => w.includes(word) || word.includes(w))) {
+                    matches++;
+                }
+            });
+            
+            return matches / Math.max(words1.length, words2.length);
+        }
+
+        function displayKnowledgeAnswer(answer) {
+            const responseHtml = `
+                ${answer.answer}
+                <div class="knowledge-source">Source: Knowledge Base • ${answer.category}</div>
+                <div class="helpful-rating">
+                    <span class="rating-text">Was this helpful?</span>
+                    <button class="rating-btn" onclick="rateResponse(true)">👍</button>
+                    <button class="rating-btn" onclick="rateResponse(false)">👎</button>
+                </div>
+                <div class="knowledge-actions">
+                    <div class="action-btn" onclick="askFollowUp()">Ask Follow-up</div>
+                    <div class="action-btn" onclick="startTicketCreation()">Still Need Help?</div>
+                </div>
+            `;
+            addMessage(responseHtml, false, true);
+        }
+
+        async function getAIResponse(question) {
+            const config = CHATBOT_CONFIG.ai;
+            
+            // Simulate network error if debug mode is on
+            if (CHATBOT_CONFIG.debug.simulateNetworkError) {
+                throw new Error('Simulated Network Error');
+            }
+            
+            if (!config.enabled) {
+                return "I understand your question, but I don't have access to my AI knowledge base right now. Would you like to create a support ticket for personalized help?";
+            }
+            
+            try {
+                const response = await fetch(config.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: config.model,
+                        messages: [
+                            {role: 'system', content: 'You are a helpful customer support assistant. Provide concise, helpful answers to customer questions. If you cannot help, suggest creating a support ticket.'},
+                            ...chatState.conversationHistory,
+                            {role: 'user', content: question}
+                        ],
+                        max_tokens: config.maxTokens,
+                        temperature: config.temperature
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (error) {
+                console.error('AI API Error:', error);
+                throw error;
+            }
+        }
+
+        function displayAIAnswer(answer) {
+            const responseHtml = `
+                ${answer}
+                <div class="knowledge-source">Source: AI Assistant</div>
+                <div class="helpful-rating">
+                    <span class="rating-text">Was this helpful?</span>
+                    <button class="rating-btn" onclick="rateResponse(true)">👍</button>
+                    <button class="rating-btn" onclick="rateResponse(false)">👎</button>
+                </div>
+                <div class="knowledge-actions">
+                    <div class="action-btn" onclick="askFollowUp()">Ask Follow-up</div>
+                    <div class="action-btn" onclick="startTicketCreation()">Create Ticket</div>
+                </div>
+            `;
+            addMessage(responseHtml, false, true);
+        }
+
+        function rateResponse(isHelpful) {
+            const rating = isHelpful ? 'helpful' : 'not helpful';
+            addMessage(`Thank you for your feedback! ${isHelpful ? '😊' : 'I\'ll try to improve. Would you like to create a support ticket for more personalized help?'}`);
+            updateDebugStatus(`User rated response: ${rating}`);
+            
+            if (!isHelpful) {
+                setTimeout(() => {
+                    addMessage(`<div class="quick-replies"><div class="quick-reply" onclick="startTicketCreation()">Create Support Ticket</div></div>`);
+                }, 1000);
+            }
+        }
+
+        function askFollowUp() {
+            addMessage("What else would you like to know about this topic?");
+            document.getElementById('messageInput').focus();
+        }
+
+        function startTicketCreation() {
+            chatState.mode = 'ticket';
+            chatState.formId = 'form_' + Date.now(); // Generate unique form ID
+            updateDebugStatus('Starting ticket creation', `Form ID: ${chatState.formId}`);
+            
+            addMessage("I'd be happy to help you create a support ticket. What type of issue are you experiencing?");
+            addMessage(`<div class="quick-replies">
+                <div class="quick-reply" onclick="selectTicketCategory('Technical Issue')">Technical Issue</div>
+                <div class="quick-reply" onclick="selectTicketCategory('Billing Question')">Billing Question</div>
+                <div class="quick-reply" onclick="selectTicketCategory('General Inquiry')">General Inquiry</div>
+                <div class="quick-reply" onclick="selectTicketCategory('Feature Request')">Feature Request</div>
+            </div>`);
+        }
+
+        function selectTicketCategory(category) {
+            addMessage(category, true);
+            chatState.ticketData.category = category;
+            
+            showTyping();
+            setTimeout(() => {
+                hideTyping();
+                addMessage(`<div class="escalation-notice">
+                    🎫 Creating a ${category.toLowerCase()} ticket. Our team typically responds within 24 hours.
+                </div>`);
+                showTicketForm();
+            }, 1000);
+        }
+
+        function showTicketForm() {
+            const formId = chatState.formId;
+            updateDebugStatus('Showing form', `Form ID: ${formId}`);
+            document.getElementById('formState').textContent = 'Active';
+            
+            const formHtml = `
+                <div id="ticketForm_${formId}">
+                    <div class="form-field">
+                        <label for="userName_${formId}">Your Name *</label>
+                        <input type="text" id="userName_${formId}" required>
+                        <div class="error-message">Please enter your name</div>
+                    </div>
+                    <div class="form-field">
+                        <label for="userEmail_${formId}">Email Address *</label>
+                        <input type="email" id="userEmail_${formId}" required>
+                        <div class="error-message">Please enter a valid email address</div>
+                    </div>
+                    <div class="form-field">
+                        <label for="priority_${formId}">Priority Level</label>
+                        <select id="priority_${formId}">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="subject_${formId}">Subject *</label>
+                        <input type="text" id="subject_${formId}" placeholder="Brief description of the issue" required>
+                        <div class="error-message">Please enter a subject</div>
+                    </div>
+                    <div class="form-field">
+                        <label for="description_${formId}">Detailed Description *</label>
+                        <textarea id="description_${formId}" placeholder="Please provide as much detail as possible..." required></textarea>
+                        <div class="error-message">Please provide a detailed description</div>
+                    </div>
+                    <button class="submit-btn" id="submitTicket_${formId}" onclick="submitTicket('${formId}')">
+                        Create Support Ticket
+                    </button>
+                </div>
+            `;
+            
+            addMessage(formHtml);
+        }
+
+        function validateForm(formId) {
+            const fields = ['userName', 'userEmail', 'subject', 'description'];
+            let isValid = true;
+            
+            fields.forEach(field => {
+                const input = document.getElementById(`${field}_${formId}`);
+                const fieldContainer = input.parentElement;
+                const errorMessage = fieldContainer.querySelector('.error-message');
+                
+                // Reset previous error state
+                fieldContainer.classList.remove('error');
+                errorMessage.style.display = 'none';
+                
+                // Validate field
+                if (!input.value.trim()) {
+                    fieldContainer.classList.add('error');
+                    errorMessage.style.display = 'block';
+                    isValid = false;
+                } else if (field === 'userEmail' && !isValidEmail(input.value)) {
+                    fieldContainer.classList.add('error');
+                    errorMessage.textContent = 'Please enter a valid email address';
+                    errorMessage.style.display = 'block';
+                    isValid = false;
+                }
+            });
+            
+            return isValid;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        async function submitTicket(formId) {
+            updateDebugStatus('Validating form', `Form ID: ${formId}`);
+            
+            if (!validateForm(formId)) {
+                updateDebugStatus('Form validation failed');
+                return;
+            }
+            
+            // Collect form data
+            const ticketData = {
+                name: document.getElementById(`userName_${formId}`).value.trim(),
+                email: document.getElementById(`userEmail_${formId}`).value.trim(),
+                priority: document.getElementById(`priority_${formId}`).value,
+                subject: document.getElementById(`subject_${formId}`).value.trim(),
+                description: document.getElementById(`description_${formId}`).value.trim(),
+                category: chatState.ticketData.category || 'General Inquiry',
+                timestamp: new Date().toISOString(),
+                conversationHistory: chatState.conversationHistory
+            };
+            
+            // Disable submit button
+            const submitBtn = document.getElementById(`submitTicket_${formId}`);
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Ticket...';
+            
+            showTyping();
+            updateDebugStatus('Submitting ticket', JSON.stringify(ticketData, null, 2));
+            
+            try {
+                const result = await createSupportTicket(ticketData);
+                hideTyping();
+                
+                if (result.success) {
+                    showTicketSuccess(result.ticketNumber);
+                    document.getElementById('formState').textContent = 'Submitted';
+                } else {
+                    showTicketError(result.error || 'Unknown error occurred');
+                }
+            } catch (error) {
+                hideTyping();
+                console.error('Ticket submission error:', error);
+                updateDebugStatus('Ticket submission error', error.message);
+                showTicketError('Network error. Please try again.');
+            }
+            
+            // Reset form state
+            chatState.mode = 'ai';
+            chatState.ticketData = {};
+            chatState.formId = null;
+        }
+
+        async function createSupportTicket(ticketData) {
+            const config = CHATBOT_CONFIG.api;
+            
+            // Simulate network error if debug mode is on
+            if (CHATBOT_CONFIG.debug.simulateNetworkError) {
+                throw new Error('Simulated Network Error');
+            }
+            
+            // If API is not configured, use local simulation
+            if (!config.enabled) {
+                return simulateTicketCreation(ticketData);
+            }
+            
+            try {
+                const response = await fetch(config.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`,
+                        'X-API-Key': config.apiKey
+                    },
+                    body: JSON.stringify(ticketData),
+                    timeout: config.timeout
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                // Fallback to simulation if API fails
+                return simulateTicketCreation(ticketData);
+            }
+        }
+
+        function simulateTicketCreation(ticketData) {
+            // Simulate API delay
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const ticketNumber = `TKT-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                    
+                    // Store ticket locally
+                    tickets.push({
+                        ...ticketData,
+                        ticketNumber: ticketNumber,
+                        status: 'Open',
+                        createdAt: new Date().toISOString()
+                    });
+                    
+                    resolve({
+                        success: true,
+                        ticketNumber: ticketNumber,
+                        estimatedResponseTime: '24 hours',
+                        status: 'Open'
+                    });
+                }, 2000);
+            });
+        }
+
+        function showTicketSuccess(ticketNumber) {
+            const successHtml = `
+                <div class="ticket-success">
+                    <h4>✅ Ticket Created Successfully!</h4>
+                    <p>Ticket Number: <span class="ticket-number">${ticketNumber}</span></p>
+                    <p>You'll receive a confirmation email shortly.</p>
+                    <p>Expected response time: <strong>24 hours</strong></p>
+                </div>
+                <div class="knowledge-actions">
+                    <div class="action-btn" onclick="startNewConversation()">Start New Chat</div>
+                    <div class="action-btn" onclick="showTicketStatus('${ticketNumber}')">Track Ticket</div>
+                </div>
+            `;
+            addMessage(successHtml);
+            updateDebugStatus('Ticket created successfully', ticketNumber);
+        }
+
+        function showTicketError(errorMessage) {
+            const errorHtml = `
+                <div class="ticket-error">
+                    <h4>❌ Ticket Creation Failed</h4>
+                    <p>${errorMessage}</p>
+                    <button class="submit-btn" onclick="retryTicketSubmission()">
+                        Try Again
+                    </button>
+                </div>
+            `;
+            addMessage(errorHtml);
+            updateDebugStatus('Ticket creation failed', errorMessage);
+        }
+
+        function retryTicketSubmission() {
+            if (chatState.formId) {
+                submitTicket(chatState.formId);
+            } else {
+                addMessage("Please fill out the form again to create a new ticket.");
+                startTicketCreation();
+            }
+        }
+
+        function startNewConversation() {
+            // Reset chat state
+            chatState = {
+                mode: 'ai',
+                step: 'initial',
+                ticketData: {},
+                conversationHistory: [],
+                formId: null
+            };
+            
+            // Clear chat messages
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="message bot-message">
+                    👨‍💼 Hi! I'm your support assistant. I can help answer questions instantly or create a support ticket if needed.
+                    <div class="quick-replies">
+                        <div class="quick-reply" onclick="askQuestion('How do I reset my password?')">Reset Password</div>
+                        <div class="quick-reply" onclick="askQuestion('How do I update my billing info?')">Billing Help</div>
+                        <div class="quick-reply" onclick="askQuestion('How do I contact support?')">Contact Support</div>
+                        <div class="quick-reply" onclick="startTicketCreation()">Create Ticket</div>
+                    </div>
+                </div>
+            `;
+            
+            updateDebugStatus('New conversation started');
+            document.getElementById('formState').textContent = 'Clean';
+        }
+
+        function showTicketStatus(ticketNumber) {
+            const ticket = tickets.find(t => t.ticketNumber === ticketNumber);
+            
+            if (ticket) {
+                const statusHtml = `
+                    <div class="ticket-success">
+                        <h4>📋 Ticket Status</h4>
+                        <p><strong>Ticket:</strong> ${ticket.ticketNumber}</p>
+                        <p><strong>Status:</strong> ${ticket.status}</p>
+                        <p><strong>Priority:</strong> ${ticket.priority}</p>
+                        <p><strong>Created:</strong> ${new Date(ticket.createdAt).toLocaleString()}</p>
+                        <p><strong>Subject:</strong> ${ticket.subject}</p>
+                    </div>
+                `;
+                addMessage(statusHtml);
+            } else {
+                addMessage("Ticket not found. Please check your ticket number.");
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addMessage(message, true);
+            input.value = '';
+            
+            // Add to conversation history
+            chatState.conversationHistory.push({role: 'user', content: message});
+            
+            if (chatState.mode === 'ticket') {
+                handleTicketMode(message);
+            } else {
+                handleAIQuery(message);
+            }
+        }
+
+        function handleTicketMode(message) {
+            addMessage("I see you're in the middle of creating a ticket. Please use the form above to provide your details, or I can help you with other questions.");
+            
+            const actionsHtml = `
+                <div class="quick-replies">
+                    <div class="quick-reply" onclick="startNewConversation()">Start Over</div>
+                    <div class="quick-reply" onclick="askQuestion('${message}')">Ask Question Instead</div>
+                </div>
+            `;
+            addMessage(actionsHtml);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Initialize the chatbot when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDebugStatus('Chatbot initialized');
+            document.getElementById('messageInput').focus();
+            
+            // Log configuration status
+            console.log('Chatbot Configuration:', {
+                aiEnabled: CHATBOT_CONFIG.ai.enabled,
+                apiEnabled: CHATBOT_CONFIG.api.enabled,
+                debugEnabled: CHATBOT_CONFIG.debug.enabled
+            });
+        });
+
+        // Auto-scroll chat messages
+        function autoScrollChat() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Call auto-scroll whenever a new message is added
+        const originalAddMessage = addMessage;
+        addMessage = function(...args) {
+            originalAddMessage.apply(this, args);
+            setTimeout(autoScrollChat, 100);
+        };
+    </script>
+</body>
+</html>
